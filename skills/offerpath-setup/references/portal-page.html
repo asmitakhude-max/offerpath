@@ -1,0 +1,807 @@
+<title>Offerpath</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: app shell. Laptop: fixed left navigation + content. Phone: top bar + bottom tab bar. Three views: Overview, Jobs, Settings (one section at a time). */
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raised:#f6f8fb; --ink:#0f1b33; --muted:#55627a; --line:#dbe1ec;
+  --accent:#1f4fd8; --accent-ink:#ffffff; --accent-soft:#e4ebff;
+  --best:#0b7a55; --best-soft:#dcf5ea; --good:#9a6200; --good-soft:#fdf0d0; --stretch:#66718a; --stretch-soft:#e8ecf3;
+  --bad:#b3364a; --bad-soft:#fbe3e7; --nav:#0f1b33; --nav-ink:#e9eef8; --nav-muted:#9fabc4; --nav-on:#22335c;
+  --shadow:0 1px 2px rgba(15,27,51,.06),0 4px 14px rgba(15,27,51,.05);
+  --display:"Sora","Public Sans",system-ui,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0b111d; --surface:#131b2b; --raised:#192338; --ink:#e9eef8; --muted:#97a3ba; --line:#263249;
+  --accent:#8fa8ff; --accent-ink:#0b1430; --accent-soft:#1d2a52;
+  --best:#5fd6a6; --best-soft:#11362a; --good:#f2c56a; --good-soft:#3a2c0c; --stretch:#a9b4c9; --stretch-soft:#222c40;
+  --bad:#ff9aa9; --bad-soft:#40202a; --nav:#0a0f1a; --nav-ink:#e9eef8; --nav-muted:#8d99b3; --nav-on:#1b2744;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.25);
+  color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0b111d; --surface:#131b2b; --raised:#192338; --ink:#e9eef8; --muted:#97a3ba; --line:#263249;
+  --accent:#8fa8ff; --accent-ink:#0b1430; --accent-soft:#1d2a52;
+  --best:#5fd6a6; --best-soft:#11362a; --good:#f2c56a; --good-soft:#3a2c0c; --stretch:#a9b4c9; --stretch-soft:#222c40;
+  --bad:#ff9aa9; --bad-soft:#40202a; --nav:#0a0f1a; --nav-ink:#e9eef8; --nav-muted:#8d99b3; --nav-on:#1b2744;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.25);
+  color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+button,select,input,textarea{font:inherit;color:inherit}
+button:focus-visible,a:focus-visible,summary:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1{font-family:var(--display);font-size:22px;line-height:1.2;margin:0;letter-spacing:-.015em}
+h2{font-family:var(--display);font-size:15px;margin:0}
+ul{margin:0;padding-left:18px}
+.sub{color:var(--muted);margin:2px 0 0;font-size:14px}
+
+/* shell */
+.shell{display:grid;grid-template-columns:228px minmax(0,1fr);min-height:100vh}
+.side{background:var(--nav);color:var(--nav-ink);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:18px;padding:18px 12px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:18px;padding:0 8px}
+.brand svg{width:30px;height:30px;flex:none}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--nav-muted);padding:9px 10px;border-radius:9px;cursor:pointer;font-weight:600;font-size:14.5px;text-align:left}
+.nav button svg{width:18px;height:18px;flex:none}
+.nav button i{margin-left:auto;font-style:normal;font-size:12px;background:var(--nav-on);color:var(--nav-ink);border-radius:999px;padding:1px 8px;font-variant-numeric:tabular-nums}
+.nav button[aria-current="page"]{background:var(--nav-on);color:var(--nav-ink)}
+.sidefoot{margin-top:auto;font-size:12.5px;color:var(--nav-muted);padding:0 8px;display:flex;flex-direction:column;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:#35c28a;display:inline-block;margin-right:6px}
+.topbar{display:none}
+.content{min-width:0;padding-inline:28px;padding-block:24px 72px;display:flex;flex-direction:column;gap:16px;max-width:1120px;width:100%}
+.vhead{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;justify-content:space-between}
+.view{display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.pad{padding:16px 18px}
+.phead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.phead small{color:var(--muted);font-size:12.5px}
+.note{background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+
+/* buttons, fields */
+.btn{font-size:14px;font-weight:600;border-radius:9px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;text-align:center;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted);font-weight:500}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.side .btn{background:var(--nav-on);border-color:transparent;color:var(--nav-ink)}
+.field{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 10px;font-size:14px;max-width:100%}
+.lbl{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;display:block}
+.chip{font-size:12.5px;color:var(--muted);background:var(--raised);border:1px solid var(--line);border-radius:7px;padding:2px 9px}
+.chip b{color:var(--ink);font-weight:600}
+.badge{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.badge.best{background:var(--best-soft);color:var(--best)} .badge.good,.badge.follow{background:var(--good-soft);color:var(--good)} .badge.stretch{background:var(--stretch-soft);color:var(--stretch)}
+.badge.new{background:var(--accent-soft);color:var(--accent)} .badge.applied,.badge.interview,.badge.offer{background:var(--best-soft);color:var(--best)}
+.badge.skipped{background:var(--stretch-soft);color:var(--stretch)} .badge.rejected,.badge.closed{background:var(--bad-soft);color:var(--bad)}
+
+/* overview */
+.funnel{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
+.stage{padding:14px 16px;border-right:1px solid var(--line);min-width:0;border-top:3px solid var(--line)}
+.stage:last-child{border-right:0}
+.stage b{display:block;font-family:var(--display);font-size:26px;line-height:1.15;font-variant-numeric:tabular-nums}
+.stage span{display:block;font-size:12.5px;color:var(--muted);font-weight:600}
+.stage small{display:block;font-size:12px;color:var(--muted)}
+.stage.on{border-top-color:var(--accent)} .stage.win{border-top-color:var(--best)}
+.stage.zero b{color:var(--muted)}
+.funnelwrap{overflow:hidden}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);text-align:left;cursor:pointer}
+.kpi span{display:block;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.kpi b{display:block;font-family:var(--display);font-size:26px;line-height:1.2;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi small{color:var(--muted);font-size:12.5px}
+.kpi.hl{border-color:transparent;background:var(--accent);color:var(--accent-ink)}
+.kpi.hl span,.kpi.hl small{color:inherit;opacity:.85}
+.kpi.warn b{color:var(--good)}
+.two{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+.trow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.trow:first-of-type{border-top:0}
+.sc{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;font-family:var(--display);font-size:16px;font-variant-numeric:tabular-nums}
+.sc.best{background:var(--best-soft);color:var(--best)} .sc.good{background:var(--good-soft);color:var(--good)} .sc.stretch{background:var(--stretch-soft);color:var(--stretch)}
+.trow strong{display:block;line-height:1.3}
+.trow small{color:var(--muted)}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;font-size:14px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600;min-width:0}
+.srcs{display:flex;flex-direction:column;gap:6px;margin-top:12px;font-size:13px;color:var(--muted)}
+.src{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:6px}
+.src b{color:var(--ink);font-weight:600}
+
+/* jobs */
+.toolbar{padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:3px}
+.tab{border:0;background:transparent;border-radius:8px;padding:6px 12px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer}
+.tab i{font-style:normal;font-size:12px;margin-left:5px;padding:1px 7px;border-radius:999px;background:var(--line);color:var(--ink);font-variant-numeric:tabular-nums}
+.tab[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-weight:600}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}
+input.q{width:200px}
+.list{display:flex;flex-direction:column;gap:12px}
+.job{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);display:grid;grid-template-columns:76px minmax(0,1fr) 176px;gap:6px 18px;align-items:start;padding:18px 18px 0}
+.job.best{border-left:4px solid var(--best)}
+.ring{position:relative;width:72px;height:72px}
+.ring svg{width:72px;height:72px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:7}
+.ring .tr{stroke:var(--line)}
+.ring .best{stroke:var(--best)} .ring .good{stroke:var(--good)} .ring .stretch{stroke:var(--stretch)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:21px;font-variant-numeric:tabular-nums}
+.ringcap{font-size:11px;color:var(--muted);text-align:center;margin-top:2px}
+.main{min-width:0}
+.head{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.head h3{margin:0;font-size:17px;font-weight:700;line-height:1.3;min-width:0}
+.co{display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:600}
+.av{width:26px;height:26px;border-radius:7px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-family:var(--display);font-size:13px;flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.acts{display:flex;flex-direction:column;gap:8px}
+.acts .st{display:flex;flex-wrap:wrap;gap:6px}
+.foot{grid-column:1 / -1;border-top:1px solid var(--line);margin:12px -18px 0;padding:8px 14px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;background:var(--raised);border-radius:0 0 14px 14px}
+.foot .grow{flex:1 1 auto}
+.foot select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 8px;font-size:13px}
+.detail{grid-column:1 / -1;display:flex;flex-direction:column;gap:12px;padding-top:6px}
+.why{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.why>div{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0;font-size:14px}
+.notes{width:100%;min-height:64px;border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:8px 10px;resize:vertical}
+.empty{padding:48px 20px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-family:var(--display);font-size:19px;margin-bottom:4px}
+
+/* settings */
+.setgrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start}
+.secnav{display:flex;flex-direction:column;gap:2px;padding:8px}
+.secnav button{border:0;background:transparent;text-align:left;padding:9px 12px;border-radius:9px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
+.secnav button[aria-current="true"]{background:var(--accent-soft);color:var(--ink)}
+.secnav button i{font-style:normal;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.secnav .grp{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:10px 12px 4px;font-weight:700}
+.sec{display:flex;flex-direction:column;gap:16px}
+.sec>div>h2{font-size:17px}
+.frow{display:flex;flex-direction:column;gap:4px;min-width:0}
+.frow small{color:var(--muted);font-size:12.5px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--line);border-radius:10px;padding:6px;background:var(--surface)}
+.tag{display:inline-flex;align-items:center;gap:4px;background:var(--accent-soft);color:var(--ink);border-radius:7px;padding:2px 4px 2px 9px;font-size:13.5px}
+.tag button{border:0;background:transparent;cursor:pointer;color:var(--muted);font-size:15px;line-height:1;padding:2px 5px;border-radius:5px}
+.tags input{border:0;background:transparent;flex:1 1 150px;min-width:110px;padding:4px 6px}
+.tags input:focus{outline:none}
+.tags:focus-within{border-color:var(--accent)}
+.check{display:flex;gap:10px;align-items:flex-start}
+.check input{width:18px;height:18px;margin-top:2px;accent-color:var(--accent);flex:none}
+.check small{display:block;color:var(--muted);font-size:12.5px}
+.rtext{width:100%;min-height:320px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px;resize:vertical;font-size:13.5px;line-height:1.5}
+.filecard{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.savebar{position:sticky;bottom:12px;z-index:3;background:var(--ink);color:var(--surface);border-radius:12px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+.savebar .btn{border-color:transparent}
+.savebar .btn.ghost{color:inherit;opacity:.8}
+
+/* resume drawer */
+dialog{border:0;border-left:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0;margin:0 0 0 auto;width:min(780px,100%);height:100%;max-height:100%;max-width:100%}
+dialog::backdrop{background:rgba(6,10,20,.55)}
+.dhead{position:sticky;top:0;z-index:1;background:var(--surface);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.dhead h2{font-size:17px;min-width:0;flex:1 1 220px}
+.dacts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dbody{padding:20px;display:flex;flex-direction:column;gap:16px}
+.changes{background:var(--accent-soft);border-radius:10px;padding:12px 16px;font-size:14px}
+.changes h3{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+.resume,.letter{border:1px solid var(--line);border-radius:10px;padding:22px;font-size:14px}
+.letter{white-space:pre-wrap}
+.resume h3{font-family:var(--display);font-size:22px;margin:0}
+.resume .contact{color:var(--muted);margin-bottom:6px}
+.resume h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:3px;margin:16px 0 8px}
+.resume .rjob{display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 16px;font-weight:600;margin-top:10px}
+.resume .rjob span{color:var(--muted);font-weight:400}
+.resume ul{margin-top:4px}
+.resume p{margin:0}
+.toast{font-size:13px;color:var(--muted)}
+
+@media (max-width:900px){
+  .shell{display:block}
+  .side{position:fixed;left:0;right:0;bottom:0;top:auto;height:auto;z-index:6;flex-direction:row;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));gap:0;border-top:1px solid var(--line)}
+  .side .brand,.sidefoot{display:none}
+  .nav{flex-direction:row;flex:1;justify-content:space-around;gap:0}
+  .nav button{flex-direction:column;gap:2px;font-size:11.5px;padding:6px 10px;position:relative}
+  .nav button i{position:absolute;top:0;right:2px;margin:0;font-size:10.5px;padding:0 6px}
+  .topbar{display:flex;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding:10px 16px;align-items:center;justify-content:space-between;gap:10px}
+  .topbar .brand{font-size:17px;padding:0}
+  .content{padding-inline:16px;padding-block:16px 96px}
+  .funnel{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .stage:nth-child(3){border-right:0}
+  .stage:nth-child(n+4){border-top-width:1px;border-top-style:solid}
+  .two{grid-template-columns:minmax(0,1fr)}
+  .setgrid{grid-template-columns:minmax(0,1fr)}
+  .secnav{flex-direction:row;overflow-x:auto;padding:6px}
+  .secnav .grp{display:none}
+  .job{grid-template-columns:64px minmax(0,1fr);padding:14px 14px 0}
+  .acts{grid-column:1 / -1;flex-direction:row;flex-wrap:wrap;align-items:center}
+  .acts .btn{flex:1 1 120px}
+  .acts .st{flex:1 1 100%}
+  .foot{margin:12px -14px 0}
+  input.q{width:100%}
+  .tools{width:100%}
+  .savebar{bottom:76px}
+}
+</style>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#2b5cf0"/><path d="M8 21.5 13.5 16l4 4L24 11.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="11.5" r="2.4" fill="#fff"/></svg>
+      Offerpath
+    </div>
+    <nav class="nav" aria-label="Sections">
+      <button data-view="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Overview</button>
+      <button data-view="jobs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>Jobs<i id="navcount">0</i></button>
+      <button data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Settings</button>
+    </nav>
+    <div class="sidefoot">
+      <span id="run"><span class="dot"></span>Runs daily at __RUN_TIME__</span>
+      <button class="btn sm" data-run hidden>Run search now</button>
+    </div>
+  </aside>
+
+  <div>
+    <div class="topbar">
+      <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#2b5cf0"/><path d="M8 21.5 13.5 16l4 4L24 11.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="11.5" r="2.4" fill="#fff"/></svg>Offerpath</div>
+      <button class="btn sm" data-run hidden>Run search now</button>
+    </div>
+
+    <main class="content">
+      <div class="note" id="notice" hidden role="status"><span id="noticetext"></span><button class="btn sm" id="undo" hidden>Undo</button></div>
+
+      <!-- OVERVIEW -->
+      <section class="view" id="v-overview">
+        <div class="vhead"><div><h1>Overview</h1><p class="sub" id="lastrun">Your search runs every evening.</p></div></div>
+        <div class="panel funnelwrap"><div class="funnel" id="stages"></div></div>
+        <div class="kpis" id="kpis"></div>
+        <div class="two">
+          <div class="panel pad">
+            <div class="phead"><h2>Top matches to review</h2><button class="btn sm" data-view="jobs">See all jobs</button></div>
+            <div id="top"></div>
+          </div>
+          <div class="panel pad">
+            <div class="phead"><h2>Last search</h2></div>
+            <dl class="kv" id="runkv"></dl>
+            <div class="srcs" id="sources"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- JOBS -->
+      <section class="view" id="v-jobs" hidden>
+        <div class="vhead"><div><h1>Jobs</h1><p class="sub">Ranked against your resume. Each job has a resume tailored to it.</p></div><button class="btn sm" id="export" hidden>Export list</button></div>
+        <div class="panel toolbar">
+          <div class="tabs" role="group" aria-label="Filter by status" id="tabs"></div>
+          <div class="tools">
+            <input class="field q" id="q" type="search" placeholder="Search title or company" aria-label="Search title or company">
+            <select class="field" id="minscore" aria-label="Minimum score"><option value="0">Any score</option><option value="60">60 and above</option><option value="70">70 and above</option><option value="80">Best matches (80+)</option></select>
+            <select class="field" id="sort" aria-label="Sort by"><option value="score">Highest score</option><option value="new">Newest first</option><option value="company">Company A to Z</option></select>
+          </div>
+        </div>
+        <div class="list" id="rows"></div>
+        <div class="panel empty" id="empty"><b>Loading your matches</b>Jobs from the nightly search will appear here.</div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view" id="v-settings" hidden>
+        <div class="vhead"><div><h1>Settings</h1><p class="sub">Everything the nightly search uses. Changes apply from the next search.</p></div></div>
+        <div class="setgrid">
+          <nav class="panel secnav" aria-label="Settings sections" id="secnav">
+            <span class="grp">Your profile</span>
+            <button data-sec="about">About you</button>
+            <button data-sec="resume">Resume</button>
+            <button data-sec="roles">Job roles</button>
+            <button data-sec="salary">Salary</button>
+            <button data-sec="sponsor">Sponsorship</button>
+            <button data-sec="location">Location</button>
+            <span class="grp">Employers</span>
+            <button data-sec="watch">Watch list<i id="c-watch"></i></button>
+            <button data-sec="exclude">Exclusion list<i id="c-excl"></i></button>
+            <span class="grp">Search</span>
+            <button data-sec="auto">Automation</button>
+          </nav>
+          <div class="panel pad">
+            <div class="sec" data-secp="about">
+              <div><h2>About you</h2><p class="sub">Used for the header of your tailored resumes and to describe your level to the search.</p></div>
+              <div class="fgrid">
+                <div class="frow"><label class="lbl" for="a-name">Full name</label><input class="field" id="a-name" type="text" autocomplete="name"></div>
+                <div class="frow"><label class="lbl" for="a-title">Current or most recent job title</label><input class="field" id="a-title" type="text"></div>
+                <div class="frow"><label class="lbl" for="a-email">Email</label><input class="field" id="a-email" type="email" autocomplete="email"></div>
+                <div class="frow"><label class="lbl" for="a-phone">Phone</label><input class="field" id="a-phone" type="tel" autocomplete="tel"></div>
+              </div>
+            </div>
+            <div class="sec" data-secp="resume" hidden>
+              <div><h2>Resume</h2><p class="sub">Every tailored resume is built only from what is here. Nothing is ever added that is not in it.</p></div>
+              <div class="filecard"><div><strong id="r-name">No resume on file</strong><div class="sub" id="r-meta"></div></div>
+                <div><input type="file" id="r-file" accept=".docx,.txt" hidden><button class="btn sm" id="r-pick">Upload a new resume</button></div></div>
+              <div class="frow"><label class="lbl" for="r-text">Resume text</label><textarea class="rtext" id="r-text" placeholder="Upload a Word or text file, or paste your resume here."></textarea><small>Upload a .docx or .txt file, or edit the text directly. After you save, the next search rebuilds your tailored resumes from it.</small></div>
+            </div>
+            <div class="sec" data-secp="roles" hidden>
+              <div><h2>Job roles</h2><p class="sub">The titles the search looks for, and the areas you want to work in.</p></div>
+              <div class="frow"><label class="lbl" for="t-roles">Job titles</label><div class="tags" data-key="roles"><input id="t-roles" placeholder="Add a title and press Enter"></div></div>
+              <div class="frow"><label class="lbl" for="t-keywords">Focus areas</label><div class="tags" data-key="keywords"><input id="t-keywords" placeholder="Add a focus area, such as data platform"></div><small>Steers both the searches and the match score toward your domain.</small></div>
+              <div class="frow"><label class="lbl" for="t-exkw">Words to avoid in job titles</label><div class="tags" data-key="excludeKeywords"><input id="t-exkw" placeholder="Add a word, such as Marketing"></div></div>
+              <label class="check"><input type="checkbox" id="s-principal"><span>Include principal-level roles without direct reports<small>Kept only when the skills match is close.</small></span></label>
+              <label class="check"><input type="checkbox" id="s-direct"><span>Full-time direct hire only<small>No contract roles, staffing agencies or reposts.</small></span></label>
+            </div>
+            <div class="sec" data-secp="salary" hidden>
+              <div><h2>Salary</h2><p class="sub">Jobs whose posted pay cannot reach your minimum are left out.</p></div>
+              <div class="fgrid"><div class="frow"><label class="lbl" for="s-minsalary">Minimum base pay per year (USD)</label><input class="field" id="s-minsalary" type="number" min="0" step="5000" inputmode="numeric"><small>The top of the posted range must reach this number.</small></div></div>
+              <label class="check"><input type="checkbox" id="s-nopay"><span>Keep jobs that do not post pay<small>They are shown with pay marked "Not posted".</small></span></label>
+            </div>
+            <div class="sec" data-secp="sponsor" hidden>
+              <div><h2>Sponsorship</h2><p class="sub">Postings that say they will not sponsor are dropped. Most postings do not say either way, and those are kept and labelled.</p></div>
+              <label class="check"><input type="checkbox" id="s-sponsor"><span>I need visa sponsorship</span></label>
+              <div class="fgrid"><div class="frow"><label class="lbl" for="s-visatype">Visa type</label><input class="field" id="s-visatype" type="text" placeholder="For example H-1B"></div></div>
+            </div>
+            <div class="sec" data-secp="location" hidden>
+              <div><h2>Location</h2><p class="sub">A job must match at least one of these.</p></div>
+              <div class="frow"><label class="lbl" for="t-locations">Locations</label><div class="tags" data-key="locations"><input id="t-locations" placeholder="Add a city, or Remote (US)"></div><small>Add "Remote (US)" for remote roles. For a city, hybrid and on-site roles in that metro area are included.</small></div>
+            </div>
+            <div class="sec" data-secp="watch" hidden>
+              <div><h2>Watch list</h2><p class="sub">Employers whose careers pages are checked directly, on top of the job sites. Long lists are covered across several nights.</p></div>
+              <div class="frow"><label class="lbl" for="t-targets">Employers to watch</label><div class="tags" data-key="targetEmployers"><input id="t-targets" placeholder="Add an employer and press Enter"></div><small id="watchmeta"></small></div>
+            </div>
+            <div class="sec" data-secp="exclude" hidden>
+              <div><h2>Exclusion list</h2><p class="sub">Employers that never appear in your results. You can also exclude an employer from any job card.</p></div>
+              <div class="frow"><label class="lbl" for="t-excluded">Excluded employers</label><div class="tags" data-key="excludeEmployers"><input id="t-excluded" placeholder="Add an employer and press Enter"></div></div>
+            </div>
+            <div class="sec" data-secp="auto" hidden>
+              <div><h2>Automation</h2><p class="sub">How the nightly search behaves.</p></div>
+              <dl class="kv"><dt>Schedule</dt><dd>Every day at __RUN_TIME__</dd><dt>Sources</dt><dd>Indeed, ZipRecruiter, Dice, employer sites, open web</dd></dl>
+              <div class="fgrid">
+                <div class="frow"><label class="lbl" for="s-minscore">Only add jobs scoring at least</label><input class="field" id="s-minscore" type="number" min="0" max="100" step="5" inputmode="numeric"></div>
+                <div class="frow"><label class="lbl" for="s-max">Most jobs added per night</label><input class="field" id="s-max" type="number" min="1" max="25" inputmode="numeric"></div>
+              </div>
+              <label class="check"><input type="checkbox" id="s-cover"><span>Write a cover letter for best matches<small>For jobs scoring 80 or above, using only what is in your resume.</small></span></label>
+              <label class="check"><input type="checkbox" id="s-recheck"><span>Re-check open postings each night<small>Jobs still waiting for review are marked when the posting closes.</small></span></label>
+            </div>
+          </div>
+        </div>
+        <div class="savebar" id="savebar" hidden><span id="savemsg">You have unsaved changes.</span><div class="dacts"><button class="btn sm ghost" id="discard">Discard</button><button class="btn sm primary" id="save">Save changes</button></div></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<dialog id="sheet" aria-labelledby="sheet-title">
+  <div class="dhead">
+    <h2 id="sheet-title">Tailored resume</h2>
+    <span class="toast" id="toast" role="status"></span>
+    <div class="dacts">
+      <button class="btn sm" id="copy">Copy resume</button>
+      <button class="btn sm" id="copyletter" hidden>Copy cover letter</button>
+      <button class="btn sm primary" id="download">Download Word file</button>
+      <button class="btn sm ghost" id="close">Close</button>
+    </div>
+  </div>
+  <div class="dbody">
+    <div class="changes" id="changes" hidden></div>
+    <div class="resume" id="resume"></div>
+    <div id="letterbox" hidden><span class="lbl">Cover letter</span><div class="letter" id="letter"></div></div>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  var TRIGGER = '__TRIGGER_ID__', REMOTE = 'Claude Code Remote';
+  var LISTS = ['roles','keywords','locations','targetEmployers','excludeEmployers','excludeKeywords'];
+  var DEFAULTS = { roles: [], keywords: [], locations: [], targetEmployers: [], excludeEmployers: [], excludeKeywords: [],
+    minSalary: 0, minScore: 60, maxPerNight: 10, includePrincipal: true, keepUnpostedPay: true, sponsorship: false, sponsorshipType: '', fullName: '', currentTitle: '', email: '', phone: '', directHireOnly: true, coverLetters: false, recheckOpen: true };
+  var VIEWS = ['overview','jobs','settings'];
+  var state = { jobs: [], settings: null, resume: null, run: null, draft: null, dirty: false, view: 'overview', sec: 'about', filter: 'new', q: '', min: 0, sort: 'score', db: null, dl: null, mcp: null, open: null, loaded: false, openD: {}, arm: null, undo: null };
+  var $ = function(id){ return document.getElementById(id); };
+  var C = 2 * Math.PI * 30;
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function safeUrl(u){ return /^https:\/\//i.test(String(u || '')) ? String(u) : ''; }
+  function band(n){ return n >= 80 ? ['best','Best match'] : n >= 70 ? ['good','Good match'] : ['stretch','Stretch']; }
+  function statusOf(j){ return j.status === 'applied' || j.status === 'skipped' ? j.status : 'new'; }
+  var RESP = { interview: 'Interview', offer: 'Offer', rejected: 'Rejected' };
+  var SKIPWHY = ['Not relevant', 'Level too low', 'Pay too low', 'Location', 'Company', 'Missing requirements'];
+  function respOf(j){ return RESP[j.response] ? j.response : ''; }
+  function list(items){ return '<ul>' + (items || []).map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'; }
+  function scoreOf(j){ return Math.max(0, Math.min(100, Math.round(j.score || 0))); }
+  function settings(){ var s = Object.assign({}, DEFAULTS, state.settings || {}); LISTS.forEach(function(k){ s[k] = Array.isArray(s[k]) ? s[k].slice() : []; }); return s; }
+  function has(arr, v){ return arr.map(function(x){ return String(x).toLowerCase(); }).indexOf(String(v).toLowerCase()) >= 0; }
+  function daysSince(iso){ var t = Date.parse(iso || ''); return isNaN(t) ? null : Math.floor((Date.now() - t) / 864e5); }
+  function followDue(j){ var d = daysSince(j.appliedDate); return statusOf(j) === 'applied' && !respOf(j) && d !== null && d >= 7; }
+  function say(msg, undo){ $('notice').hidden = !msg; $('noticetext').textContent = msg || ''; state.undo = undo || null; $('undo').hidden = !undo; }
+  function byScore(a,b){ return scoreOf(b) - scoreOf(a) || String(b.found||'').localeCompare(String(a.found||'')); }
+
+  function setView(v, keep){
+    if (VIEWS.indexOf(v) < 0) v = 'overview';
+    state.view = v;
+    VIEWS.forEach(function(x){ $('v-' + x).hidden = x !== v; });
+    document.querySelectorAll('.nav button').forEach(function(b){ if (b.dataset.view === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    if (!keep){ try { history.replaceState(null, '', '#' + v); } catch (e) {} window.scrollTo(0, 0); }
+    if (v === 'settings') drawSettings();
+  }
+
+  function render(){
+    var jobs = state.jobs, n = { new:0, applied:0, skipped:0 };
+    jobs.forEach(function(j){ n[statusOf(j)]++; });
+    var applied = jobs.filter(function(j){ return statusOf(j) === 'applied'; });
+    var got = applied.filter(function(j){ return respOf(j); }).length;
+    var talks = applied.filter(function(j){ var r = respOf(j); return r === 'interview' || r === 'offer'; }).length;
+    var offers = applied.filter(function(j){ return respOf(j) === 'offer'; }).length;
+    var fresh = jobs.filter(function(j){ return statusOf(j) === 'new'; }).sort(byScore);
+    var best = fresh.filter(function(j){ return scoreOf(j) >= 80; }).length;
+    var due = jobs.filter(followDue).length;
+    $('navcount').textContent = n.new;
+    /* overview */
+    $('stages').innerHTML = [['Found', jobs.length, '', n.skipped + ' skipped'], ['To review', n.new, 'on', best + ' best matches'], ['Applied', n.applied, 'on', due + ' to follow up'], ['Responses', got, 'on', n.applied ? Math.round(got / n.applied * 100) + '% of applied' : 'None yet'], ['Interviews', talks, 'win', ''], ['Offers', offers, 'win', '']].map(function(s){
+      return '<div class="stage ' + (s[1] ? s[2] : 'zero') + '"><b>' + s[1] + '</b><span>' + s[0] + '</span><small>' + (s[3] || '&nbsp;') + '</small></div>'; }).join('');
+    $('kpis').innerHTML =
+      '<button class="kpi hl" data-go="best"><span>Best matches waiting</span><b>' + best + '</b><small>Scoring 80 or above, not yet applied</small></button>' +
+      '<button class="kpi' + (due ? ' warn' : '') + '" data-go="applied"><span>Follow-ups due</span><b>' + due + '</b><small>Applied 7+ days ago with no response</small></button>' +
+      '<button class="kpi" data-go="applied"><span>Response rate</span><b>' + (n.applied ? Math.round(got / n.applied * 100) + '%' : '–') + '</b><small>' + got + ' of ' + n.applied + ' applications answered</small></button>';
+    $('top').innerHTML = fresh.length ? fresh.slice(0, 4).map(function(j){
+      var sc = scoreOf(j), url = safeUrl(j.url);
+      return '<div class="trow"><span class="sc ' + band(sc)[0] + '">' + sc + '</span><div><strong>' + esc(j.title) + '</strong><small>' + esc(j.company) + (j.location ? ' · ' + esc(j.location) : '') + '</small></div>' +
+        (url && !j.closed ? '<a class="btn sm primary" href="' + esc(url) + '" target="_blank" rel="noopener">Apply</a>' : '<span></span>') + '</div>'; }).join('')
+      : '<p class="sub">' + (state.loaded ? 'Nothing is waiting for review. New matches arrive after each evening search.' : 'Loading your matches.') + '</p>';
+    var m = state.run || {}, s = settings();
+    $('lastrun').textContent = m.lastRun ? 'Last search ' + m.lastRun + '. Runs every day at __RUN_TIME__.' : 'Your search runs every day at __RUN_TIME__.';
+    $('runkv').innerHTML = '<dt>Last run</dt><dd>' + esc(m.lastRun || 'Not yet') + '</dd><dt>Next run</dt><dd>__RUN_TIME__</dd><dt>Watching</dt><dd>' + s.targetEmployers.length + ' employers</dd><dt>Excluding</dt><dd>' + s.excludeEmployers.length + ' employers</dd>';
+    var src = Array.isArray(m.sources) ? m.sources.filter(function(x){ return x && x.name; }) : [];
+    $('sources').innerHTML = src.length ? src.map(function(x){ return '<div class="src"><b>' + esc(x.name) + '</b><span>' + esc(Number(x.results) || 0) + ' results · ' + esc(Number(x.added) || 0) + ' added</span></div>'; }).join('')
+      : '<div class="src"><span>Results by job site appear here after the next search.</span></div>';
+    /* jobs */
+    $('tabs').innerHTML = [['new','To review',n.new],['applied','Applied',n.applied],['skipped','Skipped',n.skipped],['all','All',jobs.length]].map(function(t){
+      return '<button class="tab" data-f="' + t[0] + '" aria-pressed="' + (state.filter === t[0]) + '">' + t[1] + '<i>' + t[2] + '</i></button>'; }).join('');
+    var q = state.q.trim().toLowerCase();
+    var shown = jobs.filter(function(j){
+      return (state.filter === 'all' || statusOf(j) === state.filter) && scoreOf(j) >= state.min &&
+        (!q || (String(j.title) + ' ' + String(j.company)).toLowerCase().indexOf(q) >= 0); });
+    shown.sort(function(a,b){
+      if (state.sort === 'company') return String(a.company).localeCompare(String(b.company));
+      if (state.sort === 'new') return String(b.found||'').localeCompare(String(a.found||'')) || scoreOf(b) - scoreOf(a);
+      return byScore(a,b); });
+    state.shown = shown;
+    $('empty').hidden = shown.length > 0;
+    if (!state.loaded) $('empty').innerHTML = '<b>Loading your matches</b>Jobs from the nightly search will appear here.';
+    else if (!shown.length) $('empty').innerHTML = (q || state.min) ? '<b>No jobs match these filters</b>Clear the search or lower the minimum score.'
+      : state.filter === 'new' ? '<b>Nothing waiting for review</b>New matches appear after each evening search, highest score first.'
+      : '<b>No jobs here yet</b>Jobs you mark as ' + esc(state.filter) + ' will be listed here.';
+    $('rows').innerHTML = shown.map(function(j){
+      var sc = scoreOf(j), b = band(sc), st = statusOf(j), url = safeUrl(j.url), rs = respOf(j), id = esc(j.id), open = !!state.openD[j.id];
+      var chips = [['', j.location], ['Pay', j.pay], ['Posted', j.posted], ['Sponsorship', j.sponsorship], ['Source', j.source], [st === 'skipped' ? 'Skipped because' : '', st === 'skipped' ? j.skipReason : '']].filter(function(c){ return c[1]; })
+        .map(function(c){ return '<span class="chip">' + (c[0] ? c[0] + ': ' : '') + '<b>' + esc(c[1]) + '</b></span>'; }).join('');
+      var stl = st === 'new' ? 'To review' : st === 'applied' ? 'Applied' + (j.appliedOn ? ' ' + esc(j.appliedOn) : '') : 'Skipped';
+      var acts = '<div class="st"><span class="badge ' + st + '">' + stl + '</span>' + (st === 'applied' && rs ? '<span class="badge ' + rs + '">' + RESP[rs] + '</span>' : '') + (followDue(j) ? '<span class="badge follow">Follow up</span>' : '') + '</div>' +
+        (url ? '<a class="btn primary" href="' + esc(url) + '" target="_blank" rel="noopener">' + (j.closed ? 'View posting' : 'Apply') + '</a>' : '') +
+        (j.resume ? '<button class="btn" data-resume="' + id + '">' + (j.coverLetter ? 'Resume and letter' : 'Tailored resume') + '</button>' : '');
+      if (st === 'new') acts += '<button class="btn" data-act="applied" data-id="' + id + '">Mark applied</button>';
+      if (st === 'applied') acts += '<select class="field" aria-label="Response received" data-resp="' + id + '">' +
+        [['', 'No response yet'], ['interview', 'Interview'], ['offer', 'Offer'], ['rejected', 'Rejected']].map(function(o){ return '<option value="' + o[0] + '"' + (o[0] === rs ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
+      var armed = state.arm === j.id, watched = has(settings().targetEmployers, j.company);
+      var foot = '<button class="btn sm ghost" data-toggle="' + id + '">' + (open ? 'Hide details' : 'Score details and notes') + '</button><span class="grow"></span>';
+      if (st === 'new') foot += '<select aria-label="Skip this job" data-skip="' + id + '"><option value="">Skip…</option>' + SKIPWHY.map(function(o){ return '<option>' + o + '</option>'; }).join('') + '<option value="none">No reason</option></select>';
+      else foot += '<button class="btn sm ghost" data-act="new" data-id="' + id + '">Move back to review</button>';
+      foot += (watched ? '' : '<button class="btn sm ghost" data-watch="' + id + '">Watch employer</button>') +
+        '<button class="btn sm ghost danger" data-exclude="' + id + '">' + (armed ? 'Confirm: exclude ' + esc(j.company) : 'Exclude employer') + '</button>';
+      return '<article class="job' + (sc >= 80 ? ' best' : '') + '">' +
+        '<div><div class="ring"><svg viewBox="0 0 72 72" aria-hidden="true"><circle class="tr" cx="36" cy="36" r="30"/><circle class="' + b[0] + '" cx="36" cy="36" r="30" stroke-linecap="round" stroke-dasharray="' + (sc / 100 * C).toFixed(1) + ' ' + C.toFixed(1) + '"/></svg><b>' + sc + '</b></div><div class="ringcap">out of 100</div></div>' +
+        '<div class="main"><div class="head"><h3>' + esc(j.title) + '</h3><span class="badge ' + b[0] + '">' + b[1] + '</span>' + (j.closed ? '<span class="badge closed">Posting closed</span>' : '') + '</div>' +
+          '<div class="co"><span class="av">' + esc(String(j.company || '?').charAt(0).toUpperCase()) + '</span>' + esc(j.company) + '</div>' +
+          '<div class="chips">' + chips + '</div></div>' +
+        '<div class="acts">' + acts + '</div>' +
+        (open ? '<div class="detail"><div class="why"><div><span class="lbl">What matches</span>' + list(j.fit) + '</div><div><span class="lbl">Gaps to expect</span>' + list(j.gaps) + '</div></div>' +
+          '<div><label class="lbl" for="note-' + id + '">Your notes</label><textarea class="notes" id="note-' + id + '" data-note="' + id + '" placeholder="Recruiter name, referral, next step">' + esc(j.notes || '') + '</textarea></div></div>' : '') +
+        '<div class="foot">' + foot + '</div></article>';
+    }).join('');
+  }
+
+  function resumeHtml(r){
+    var h = '<h3>' + esc(r.name) + '</h3><p class="contact">' + [r.phone, r.email].filter(Boolean).map(esc).join(' · ') + '</p>';
+    if (r.headline) h += '<p><strong>' + esc(r.headline) + '</strong></p>';
+    h += '<h4>Professional summary</h4><p>' + esc(r.summary) + '</p><h4>Experience</h4>';
+    (r.experience || []).forEach(function(e){
+      h += '<div class="rjob"><div>' + esc(e.title) + ', ' + esc(e.company) + '</div><span>' + esc(e.location) + ' · ' + esc(e.dates) + '</span></div>' + list(e.bullets);
+    });
+    h += '<h4>Skills</h4><p>' + (r.skills || []).map(esc).join(' · ') + '</p>';
+    h += '<h4>Education</h4>' + (r.education || []).map(function(e){ return '<p>' + esc(e) + '</p>'; }).join('');
+    h += '<h4>Certifications and awards</h4>' + list(r.certifications);
+    return h;
+  }
+  function resumeText(r){
+    var t = [r.name, [r.phone, r.email].filter(Boolean).join(' | ')];
+    if (r.headline) t.push(r.headline);
+    t.push('', 'PROFESSIONAL SUMMARY', r.summary, '', 'EXPERIENCE');
+    (r.experience || []).forEach(function(e){
+      t.push('', e.title + ', ' + e.company + ' | ' + e.location + ' | ' + e.dates);
+      (e.bullets || []).forEach(function(b){ t.push('- ' + b); });
+    });
+    t.push('', 'SKILLS', (r.skills || []).join(', '), '', 'EDUCATION');
+    (r.education || []).forEach(function(e){ t.push(e); });
+    t.push('', 'CERTIFICATIONS AND AWARDS');
+    (r.certifications || []).forEach(function(c){ t.push('- ' + c); });
+    return t.join('\n');
+  }
+  function xe(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function run(text, o){ o = o || {}; return '<w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>' + (o.bold ? '<w:b/>' : '') + (o.color ? '<w:color w:val="' + o.color + '"/>' : '') + '<w:sz w:val="' + (o.size || 21) + '"/></w:rPr><w:t xml:space="preserve">' + xe(text) + '</w:t></w:r>'; }
+  function para(runs, o){ o = o || {};
+    return '<w:p><w:pPr>' + (o.rule ? '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="888888"/></w:pBdr>' : '') +
+      '<w:spacing w:before="' + (o.before || 0) + '" w:after="' + (o.after == null ? 80 : o.after) + '"/>' +
+      (o.bullet ? '<w:ind w:left="360" w:hanging="220"/>' : '') + (o.center ? '<w:jc w:val="center"/>' : '') + '</w:pPr>' + runs + '</w:p>'; }
+  function resumeDocXml(r){
+    var b = '', H = function(t){ return para(run(t.toUpperCase(), { bold:true, size:22 }), { before:200, after:100, rule:true }); };
+    b += para(run(r.name, { bold:true, size:36 }), { center:true, after:40 });
+    b += para(run([r.phone, r.email].filter(Boolean).join('  |  ')), { center:true, after:60 });
+    if (r.headline) b += para(run(r.headline, { bold:true }), { center:true });
+    b += H('Professional Summary') + para(run(r.summary)) + H('Experience');
+    (r.experience || []).forEach(function(e){
+      b += para(run(e.title + ', ' + e.company, { bold:true, size:22 }) + run('   ' + e.location + '  |  ' + e.dates, { size:20, color:'555555' }), { before:140, after:60 });
+      (e.bullets || []).forEach(function(x){ b += para(run('•  ' + x), { bullet:true, after:50 }); });
+    });
+    b += H('Skills') + para(run((r.skills || []).join('  •  ')));
+    b += H('Education'); (r.education || []).forEach(function(e){ b += para(run(e), { after:40 }); });
+    b += H('Certifications and Awards'); (r.certifications || []).forEach(function(c){ b += para(run('•  ' + c), { bullet:true, after:40 }); });
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + b +
+      '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="900" w:right="1000" w:bottom="900" w:left="1000" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>';
+  }
+  var CRC = (function(){ var t = [], n, c, k; for (n = 0; n < 256; n++){ c = n; for (k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(u){ var c = 0xFFFFFFFF; for (var i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function zipStore(files){
+    var enc = new TextEncoder(), chunks = [], central = [], off = 0;
+    function rec(fields){ var size = 0; fields.forEach(function(f){ size += f[1]; }); var buf = new Uint8Array(size), v = new DataView(buf.buffer), p = 0;
+      fields.forEach(function(f){ if (f[1] === 2) v.setUint16(p, f[0], true); else v.setUint32(p, f[0], true); p += f[1]; }); return buf; }
+    files.forEach(function(f){
+      var name = enc.encode(f[0]), data = enc.encode(f[1]), crc = crc32(data);
+      var lh = rec([[0x04034b50,4],[20,2],[0x0800,2],[0,2],[0,2],[0x21,2],[crc,4],[data.length,4],[data.length,4],[name.length,2],[0,2]]);
+      central.push(rec([[0x02014b50,4],[20,2],[20,2],[0x0800,2],[0,2],[0,2],[0x21,2],[crc,4],[data.length,4],[data.length,4],[name.length,2],[0,2],[0,2],[0,2],[0,2],[0,4],[off,4]]), name);
+      chunks.push(lh, name, data); off += lh.length + name.length + data.length;
+    });
+    var cdSize = 0; central.forEach(function(c){ cdSize += c.length; });
+    var end = rec([[0x06054b50,4],[0,2],[0,2],[files.length,2],[files.length,2],[cdSize,4],[off,4],[0,2]]);
+    return chunks.concat(central, [end]);
+  }
+  function resumeDocx(r){
+    var parts = zipStore([
+      ['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
+      ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
+      ['word/document.xml', resumeDocXml(r)]
+    ]);
+    return new Blob(parts, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  }
+
+  function openResume(id){
+    var j = state.jobs.filter(function(x){ return x.id === id; })[0];
+    if (!j || !j.resume) return;
+    state.open = j;
+    $('sheet-title').textContent = j.title + ', ' + j.company;
+    $('resume').innerHTML = resumeHtml(j.resume);
+    $('changes').hidden = !(j.changes && j.changes.length);
+    $('changes').innerHTML = '<h3>What changed from your original</h3>' + list(j.changes);
+    $('letterbox').hidden = !j.coverLetter; $('copyletter').hidden = !j.coverLetter;
+    $('letter').textContent = j.coverLetter || '';
+    $('toast').textContent = '';
+    $('download').hidden = !state.dl;
+    $('sheet').showModal();
+  }
+  function copyText(text, node, toast){
+    navigator.clipboard.writeText(text).then(function(){ toast.textContent = 'Copied'; }, function(){
+      var r = document.createRange(); r.selectNodeContents(node); var s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      toast.textContent = 'Text selected. Press Ctrl+C to copy.';
+    });
+  }
+  var NOSAVE = 'That change was not saved. Try again in a moment.';
+  async function upd(id, data){
+    if (!state.db) return false;
+    try { await state.db.doc('jobs/' + id).update(data); return true; } catch (e) { say(NOSAVE); return false; }
+  }
+  function setStatus(id, status, reason){
+    var data = { status: status };
+    if (status === 'applied'){ data.appliedOn = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }); data.appliedDate = new Date().toISOString().slice(0, 10); }
+    if (status === 'skipped') data.skipReason = reason || '';
+    upd(id, data);
+  }
+  async function writeSettings(s){ s.updatedAt = new Date().toISOString(); await state.db.doc('meta/settings').set(s); }
+  async function excludeEmployer(id){
+    var j = state.jobs.filter(function(x){ return x.id === id; })[0]; if (!j || !state.db) return;
+    if (state.arm !== id){ state.arm = id; render(); setTimeout(function(){ if (state.arm === id){ state.arm = null; render(); } }, 5000); return; }
+    state.arm = null;
+    var s = settings(), name = String(j.company);
+    if (!has(s.excludeEmployers, name)) s.excludeEmployers.push(name);
+    s.targetEmployers = s.targetEmployers.filter(function(x){ return String(x).toLowerCase() !== name.toLowerCase(); });
+    var mine = state.jobs.filter(function(x){ return String(x.company).toLowerCase() === name.toLowerCase() && statusOf(x) === 'new'; }).map(function(x){ return x.id; });
+    try {
+      await writeSettings(s);
+      for (var i = 0; i < mine.length; i++) await state.db.doc('jobs/' + mine[i]).update({ status: 'skipped', skipReason: 'Company' });
+      say(name + ' is on your exclusion list. ' + mine.length + ' open job' + (mine.length === 1 ? ' was' : 's were') + ' moved to Skipped.', async function(){
+        var u = settings(); u.excludeEmployers = u.excludeEmployers.filter(function(x){ return String(x).toLowerCase() !== name.toLowerCase(); });
+        try { await writeSettings(u); for (var k = 0; k < mine.length; k++) await state.db.doc('jobs/' + mine[k]).update({ status: 'new', skipReason: '' }); say(name + ' was removed from your exclusion list.'); } catch (e) { say(NOSAVE); }
+      });
+    } catch (e) { say(NOSAVE); }
+  }
+  async function watchEmployer(id){
+    var j = state.jobs.filter(function(x){ return x.id === id; })[0]; if (!j || !state.db) return;
+    var s = settings(); if (!has(s.targetEmployers, j.company)) s.targetEmployers.push(String(j.company));
+    try { await writeSettings(s); say(j.company + ' was added to your watch list.'); } catch (e) { say(NOSAVE); }
+  }
+
+  /* settings */
+  function markDirty(){ state.dirty = true; $('savebar').hidden = false; $('savemsg').textContent = 'You have unsaved changes.'; }
+  function drawTags(key){
+    var box = document.querySelector('.tags[data-key="' + key + '"]'), input = box.querySelector('input');
+    box.querySelectorAll('.tag').forEach(function(t){ t.remove(); });
+    state.draft[key].forEach(function(v, i){
+      var t = document.createElement('span'); t.className = 'tag'; t.textContent = v;
+      var x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove ' + v); x.dataset.rm = key; x.dataset.i = i;
+      t.appendChild(x); box.insertBefore(t, input);
+    });
+    $('c-watch').textContent = state.draft.targetEmployers.length; $('c-excl').textContent = state.draft.excludeEmployers.length;
+  }
+  function addTag(input){
+    var key = input.parentNode.dataset.key, before = state.draft[key].length;
+    input.value.split(',').forEach(function(v){ v = v.trim(); if (v && !has(state.draft[key], v)) state.draft[key].push(v); });
+    input.value = ''; drawTags(key); if (state.draft[key].length !== before) markDirty();
+  }
+  function drawSettings(force){
+    document.querySelectorAll('#secnav button').forEach(function(b){ if (b.dataset.sec === state.sec) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    document.querySelectorAll('[data-secp]').forEach(function(p){ p.hidden = p.dataset.secp !== state.sec; });
+    if (state.dirty && !force) return;
+    state.draft = settings(); state.dirty = false; $('savebar').hidden = true;
+    LISTS.forEach(drawTags);
+    var d = state.draft;
+    $('s-minsalary').value = d.minSalary; $('s-minscore').value = d.minScore; $('s-max').value = d.maxPerNight; $('s-visatype').value = d.sponsorshipType || '';
+    $('a-name').value = d.fullName || ''; $('a-title').value = d.currentTitle || ''; $('a-email').value = d.email || ''; $('a-phone').value = d.phone || '';
+    $('s-principal').checked = !!d.includePrincipal; $('s-nopay').checked = !!d.keepUnpostedPay; $('s-sponsor').checked = !!d.sponsorship;
+    $('s-direct').checked = !!d.directHireOnly; $('s-cover').checked = !!d.coverLetters; $('s-recheck').checked = !!d.recheckOpen;
+    var r = state.resume || {};
+    $('r-text').value = r.text || '';
+    $('r-name').textContent = r.text ? (r.fileName || 'Resume on file') : 'No resume on file';
+    $('r-meta').textContent = r.text ? String(r.text).split(/\s+/).filter(Boolean).length + ' words' + (r.updatedAt ? ' · updated ' + new Date(r.updatedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '') : 'Upload a file or paste the text below.';
+    state.resumeFile = r.fileName || '';
+    var chk = (state.run && Array.isArray(state.run.employersChecked)) ? state.run.employersChecked.length : 0;
+    $('watchmeta').textContent = chk ? chk + ' of these were checked in the last search.' : '';
+  }
+  async function saveSettings(){
+    if (!state.db){ $('savemsg').textContent = 'Settings cannot be saved in this view.'; return; }
+    document.querySelectorAll('.tags input').forEach(function(i){ if (i.value.trim()) addTag(i); });
+    var d = state.draft, num = function(id, lo, hi, fb){ var v = Number($(id).value); return isFinite(v) && $(id).value !== '' ? Math.max(lo, Math.min(hi, Math.round(v))) : fb; };
+    d.minSalary = num('s-minsalary', 0, 2000000, 0); d.minScore = num('s-minscore', 0, 100, 60); d.maxPerNight = num('s-max', 1, 25, 10);
+    d.sponsorshipType = $('s-visatype').value.trim().slice(0, 60);
+    d.fullName = $('a-name').value.trim().slice(0, 120); d.currentTitle = $('a-title').value.trim().slice(0, 120); d.email = $('a-email').value.trim().slice(0, 160); d.phone = $('a-phone').value.trim().slice(0, 40);
+    d.includePrincipal = $('s-principal').checked; d.keepUnpostedPay = $('s-nopay').checked; d.sponsorship = $('s-sponsor').checked;
+    d.directHireOnly = $('s-direct').checked; d.coverLetters = $('s-cover').checked; d.recheckOpen = $('s-recheck').checked;
+    $('save').disabled = true;
+    try {
+      await writeSettings(d);
+      var text = $('r-text').value.trim(), old = (state.resume && state.resume.text) || '';
+      if (text !== old.trim()){
+        if (text.length > 60000){ $('savemsg').textContent = 'The resume text is too long to save. Shorten it and save again.'; $('save').disabled = false; return; }
+        await state.db.doc('meta/resume').set({ text: text, fileName: state.resumeFile || 'Resume', updatedAt: new Date().toISOString() });
+      }
+      state.dirty = false; $('savebar').hidden = true; say('Settings saved. They apply from the next search.');
+    } catch (e) { $('savemsg').textContent = 'Settings were not saved. Try again in a moment.'; }
+    $('save').disabled = false;
+  }
+  async function docxText(buf){
+    var u = new Uint8Array(buf), v = new DataView(buf), dec = new TextDecoder(), i = u.length - 22;
+    while (i >= 0 && v.getUint32(i, true) !== 0x06054b50) i--;
+    if (i < 0) throw new Error('not a docx');
+    var n = v.getUint16(i + 10, true), off = v.getUint32(i + 16, true);
+    for (var k = 0; k < n; k++){
+      if (v.getUint32(off, true) !== 0x02014b50) break;
+      var method = v.getUint16(off + 10, true), csize = v.getUint32(off + 20, true), nl = v.getUint16(off + 28, true), el = v.getUint16(off + 30, true), cl = v.getUint16(off + 32, true), lho = v.getUint32(off + 42, true);
+      if (dec.decode(u.subarray(off + 46, off + 46 + nl)) === 'word/document.xml'){
+        var start = lho + 30 + v.getUint16(lho + 26, true) + v.getUint16(lho + 28, true), data = u.subarray(start, start + csize), xml;
+        if (method === 0) xml = dec.decode(data);
+        else xml = await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+        return xml.replace(/<\/w:p>/g, '\n').replace(/<w:tab\/>/g, '\t').replace(/<w:br[^>]*\/>/g, '\n').replace(/<[^>]+>/g, '')
+          .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&')
+          .split('\n').map(function(l){ return l.trim(); }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+      }
+      off += 46 + nl + el + cl;
+    }
+    throw new Error('no document');
+  }
+  async function pickResume(file){
+    if (!file) return;
+    try {
+      var text = /\.docx$/i.test(file.name) ? await docxText(await file.arrayBuffer()) : await file.text();
+      if (!text.trim()) throw new Error('empty');
+      $('r-text').value = text; state.resumeFile = file.name; $('r-name').textContent = file.name; $('r-meta').textContent = 'Not saved yet. Check the text below, then save.';
+      markDirty();
+    } catch (e) { say('That file could not be read. Use a .docx or .txt file, or paste the text into the box.'); }
+  }
+
+  async function runNow(){
+    var bs = document.querySelectorAll('[data-run]'); if (!state.mcp || bs[0].disabled) return;
+    var set = function(dis, label){ bs.forEach(function(b){ b.disabled = dis; b.textContent = label; }); };
+    set(true, 'Starting…');
+    try {
+      await state.mcp.callTool(REMOTE, 'fire_trigger', { trigger_id: TRIGGER }, { cache: false });
+      say('Search started. New matches usually appear within 10 to 15 minutes.');
+      set(true, 'Search running'); setTimeout(function(){ set(false, 'Run search now'); }, 600000); return;
+    } catch (e) {
+      var c = e && e.code;
+      if (c === 'server_not_connected' || c === 'needs_reauth' || c === 'selection_required') say('Run now is not connected for this view. The evening search still runs on schedule.');
+      else if (c === 'not_in_manifest' || c === 'consent_required' || c === 'blocked_by_policy' || c === 'approval_required') say('Run now was not allowed for this page. The evening search still runs on schedule.');
+      else if (c === 'server_unavailable' || c === 'upstream_error') say('Could not confirm that the search started. Check for new jobs in 15 minutes before trying again.');
+      else say('The search could not be started from here. The evening search still runs on schedule.');
+    }
+    set(false, 'Run search now');
+  }
+  async function exportList(){
+    if (!state.dl) return;
+    var cols = ['title','company','score','status','response','skipReason','location','pay','posted','found','source','appliedDate','notes','url'];
+    var csv = [cols.join(',')].concat((state.shown || []).map(function(j){
+      return cols.map(function(c){ var v = c === 'status' ? statusOf(j) : j[c]; return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); })).join('\r\n');
+    try { await state.dl.save({ filename: 'Offerpath jobs.csv', data: csv }); } catch (e) { if (!e || e.code !== 'declined') say('The list could not be exported from this view.'); }
+  }
+
+  document.addEventListener('click', function(ev){
+    var t = ev.target.closest('button'); if (!t) return;
+    var d = t.dataset;
+    if (d.view) setView(d.view);
+    else if (d.go){ state.filter = d.go === 'best' ? 'new' : 'applied'; state.min = d.go === 'best' ? 80 : 0; $('minscore').value = String(state.min); setView('jobs'); render(); }
+    else if (d.sec){ state.sec = d.sec; drawSettings(); }
+    else if (d.f){ state.filter = d.f; render(); }
+    else if (d.resume) openResume(d.resume);
+    else if (d.act) setStatus(d.id, d.act);
+    else if (d.toggle){ state.openD[d.toggle] = !state.openD[d.toggle]; render(); }
+    else if (d.exclude) excludeEmployer(d.exclude);
+    else if (d.watch) watchEmployer(d.watch);
+    else if (d.rm){ state.draft[d.rm].splice(Number(d.i), 1); drawTags(d.rm); markDirty(); }
+    else if ('run' in d) runNow();
+  });
+  document.addEventListener('change', function(ev){
+    var t = ev.target, d = t.dataset || {};
+    if (t.id === 'minscore'){ state.min = Number(t.value) || 0; render(); }
+    else if (t.id === 'sort'){ state.sort = t.value; render(); }
+    else if (t.id === 'r-file'){ pickResume(t.files && t.files[0]); t.value = ''; }
+    else if (d.resp) upd(d.resp, { response: t.value, respondedOn: t.value ? new Date().toISOString().slice(0, 10) : '' });
+    else if (d.skip){ if (t.value) setStatus(d.skip, 'skipped', t.value === 'none' ? '' : t.value); }
+    else if (d.note) upd(d.note, { notes: t.value.slice(0, 4000) });
+    else if (t.closest && t.closest('#v-settings')) markDirty();
+  });
+  document.addEventListener('input', function(ev){ var t = ev.target; if (t.id === 'r-text' || (t.closest && t.closest('.sec') && t.type !== 'file' && !(t.parentNode.classList && t.parentNode.classList.contains('tags')))) markDirty(); });
+  document.addEventListener('keydown', function(ev){
+    var t = ev.target;
+    if (t.parentNode && t.parentNode.classList && t.parentNode.classList.contains('tags') && (ev.key === 'Enter' || ev.key === ',')){ ev.preventDefault(); addTag(t); }
+  });
+  document.addEventListener('focusout', function(ev){ var t = ev.target; if (t.parentNode && t.parentNode.classList && t.parentNode.classList.contains('tags') && t.value.trim()) addTag(t); });
+  $('q').addEventListener('input', function(){ state.q = this.value; render(); });
+  $('close').addEventListener('click', function(){ $('sheet').close(); });
+  $('save').addEventListener('click', saveSettings);
+  $('discard').addEventListener('click', function(){ drawSettings(true); });
+  $('r-pick').addEventListener('click', function(){ $('r-file').click(); });
+  $('undo').addEventListener('click', function(){ var f = state.undo; state.undo = null; $('undo').hidden = true; if (f) f(); });
+  $('export').addEventListener('click', exportList);
+  $('copy').addEventListener('click', function(){ copyText(resumeText(state.open.resume), $('resume'), $('toast')); });
+  $('copyletter').addEventListener('click', function(){ copyText(state.open.coverLetter || '', $('letter'), $('toast')); });
+  $('download').addEventListener('click', async function(){
+    var j = state.open; if (!j || !state.dl) return;
+    try {
+      var blob = resumeDocx(j.resume);
+      var name = (String(j.resume.name || 'Resume') + ' - ' + j.company + ' - ' + j.title).replace(/[^\w \-]/g, '').slice(0, 110) + '.docx';
+      await state.dl.save({ filename: name, data: blob });
+      $('toast').textContent = 'Saved';
+    } catch (e) { $('toast').textContent = e && e.code === 'declined' ? '' : 'Download is not available here. Use Copy resume instead.'; }
+  });
+  window.addEventListener('hashchange', function(){ setView(location.hash.slice(1), true); });
+
+  async function boot(){
+    state.draft = settings();
+    setView(location.hash.slice(1) || 'overview', true); render();
+    var use = window.claude && window.claude.use;
+    if (!use){ state.loaded = true; render(); return; }
+    window.claude.use('downloads').then(function(d){ state.dl = d; $('export').hidden = !d; });
+    window.claude.use('mcp').then(function(m){ state.mcp = m; document.querySelectorAll('[data-run]').forEach(function(b){ b.hidden = !m; }); });
+    var db = await window.claude.use('db');
+    if (!db){ state.loaded = true; say('Sign in to Claude to see your job matches.'); render(); return; }
+    state.db = db;
+    db.collection('jobs').limit(1000).onSnapshot(function(snap){
+      state.loaded = true;
+      state.jobs = snap.docs.map(function(d){ var o = Object.assign({}, d.data()); o.id = d.id; return o; });
+      render();
+    }, function(){ state.loaded = true; say('Could not load jobs. Reload the page to try again.'); render(); });
+    db.doc('meta/settings').onSnapshot(function(d){ state.settings = d.exists ? d.data() : null; render(); drawSettings();
+      if (!d.exists && !state.welcomed){ state.welcomed = true; setView('settings'); say('Welcome to Offerpath. Fill in each section under Settings, starting with About you, then save. Your searches use what you enter here.'); }
+    }, function(){});
+    db.doc('meta/resume').onSnapshot(function(d){ state.resume = d.exists ? d.data() : null; drawSettings(); }, function(){});
+    db.doc('meta/run').onSnapshot(function(d){
+      state.run = d.exists ? d.data() : null;
+      $('run').innerHTML = '<span class="dot"></span>' + (state.run && state.run.lastRun ? 'Last search ' + esc(state.run.lastRun) : 'Runs daily at __RUN_TIME__');
+      render();
+    }, function(){});
+  }
+  boot();
+})();
+</script>
