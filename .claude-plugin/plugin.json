@@ -1,0 +1,9 @@
+{
+  "name": "offerpath",
+  "version": "0.1.0",
+  "description": "A private job-search portal with a daily automated search. Connects to the Indeed, ZipRecruiter and Dice job-site connectors, and also searches employer careers pages, applicant systems and open job boards. Ranks every job against your resume, writes a tailored resume for each, and tracks applications and responses.",
+  "author": {
+    "name": "Asmita Khude"
+  },
+  "keywords": ["job search", "careers", "resume", "job tracker", "indeed", "ziprecruiter", "dice"]
+}
